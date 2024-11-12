@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Escape Route Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            width: 100%;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Escape Route Map</h1>
+    <div>
+        <label for="destinationInput">Destination (Place Name):</label>
+        <input type="text" id="destinationInput" placeholder="Enter destination name" />
+        
+        <button id="setDestination">Set Destination</button>
+    </div>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.min.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script>
+        var map = L.map('map').setView([20, 0], 2); // Initial view (world map)
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var destinationMarker; // To store the destination marker
+        var currentLocation; // To store current location
+        var routingControl; // To store the routing control
+
+        function getCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, handleError);
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        function showPosition(position) {
+            var lat = position.coords.latitude;
+            var lon = position.coords.longitude;
+            currentLocation = L.latLng(lat, lon);
+
+            // Add a marker for the user's current location
+            var userMarker = L.marker(currentLocation).addTo(map)
+                .bindPopup('You are here!')
+                .openPopup();
+
+            // Set the map view to the user's location
+            map.setView(currentLocation, 13);
+
+            // Set a default destination
+            setDefaultDestination(9.950725418291828, 76.35171759792067); // Default coordinates for the destination
+        }
+
+        function setDefaultDestination(lat, lon) {
+            // Add a marker for the default destination
+            destinationMarker = L.marker([lat, lon]).addTo(map)
+                .bindPopup('Default Destination')
+                .openPopup();
+
+            // Add routing control from current location to the destination
+            addRoutingControl(currentLocation, L.latLng(lat, lon));
+        }
+
+        function addRoutingControl(start, end) {
+            // Remove existing routing control if it exists
+            if (routingControl) {
+                map.removeControl(routingControl);
+            }
+
+            // Create a new routing control
+            routingControl = L.Routing.control({
+                waypoints: [start, end],
+                createMarker: function(i, waypoint, n) {
+                    var marker = L.marker(waypoint.latLng).bindPopup(i === 0 ? 'You are here!' : 'Destination');
+                    return marker;
+                }
+            }).addTo(map);
+        }
+
+        function setDestination() {
+            var placeName = document.getElementById('destinationInput').value;
+
+            if (placeName) {
+                // Use the geocoder to get coordinates for the place name
+                var geocoder = L.Control.Geocoder.nominatim();
+                geocoder.geocode(placeName, function(results) {
+                    if (results.length > 0) {
+                        var latLng = results[0].center;
+
+                        // If a destination marker exists, remove it
+                        if (destinationMarker) {
+                            map.removeLayer(destinationMarker);
+                        }
+
+                        // Add a marker for the new destination
+                        destinationMarker = L.marker(latLng).addTo(map)
+                            .bindPopup('Destination: ' + results[0].display_name)
+                            .openPopup();
+
+                        // Update the routing control from current location to the new destination
+                        addRoutingControl(currentLocation, latLng);
+                    } else {
+                        alert("Place not found. Please enter a valid name.");
+                    }
+                });
+            } else {
+                alert("Please enter a destination.");
+            }
+        }
+
+        function handleError(error) {
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    alert("User denied the request for Geolocation.");
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    alert("Location information is unavailable.");
+                    break;
+                case error.TIMEOUT:
+                    alert("The request to get user location timed out.");
+                    break;
+                case error.UNKNOWN_ERROR:
+                    alert("An unknown error occurred.");
+                    break;
+            }
+        }
+
+        // Event listener for the set destination button
+        document.getElementById('setDestination').addEventListener('click', setDestination);
+
+        // Call the function to get the current location
+        getCurrentLocation();
+    </script>
+<!-- info section -->
+<section class="info_section ">
+    <div class="container">
+      <div class="info_top">
+        <div class="row">
+          <div class="col-md-3 ">
+            <a class="navbar-brand" href="index.html">
+              Together
+            </a>
+          </div>
+          <div class="col-md-5 ">
+            <div class="info_contact">
+              <a href="">
+                <i class="fa fa-map-marker" aria-hidden="true"></i>
+                <span>
+                  Location
+                </span>
+              </a>
+              <a href="">
+                <i class="fa fa-phone" aria-hidden="true"></i>
+                <span>
+                  +01 1234567890
+                </span>
+              </a>
+            </div>
+          </div>
+          <div class="col-md-4 ">
+            <div class="social_box">
+              <a href="">
+                <i class="fa fa-facebook" aria-hidden="true"></i>
+              </a>
+              <a href="">
+                <i class="fa fa-twitter" aria-hidden="true"></i>
+              </a>
+              <a href="">
+                <i class="fa fa-linkedin" aria-hidden="true"></i>
+              </a>
+              <a href="">
+                <i class="fa fa-instagram" aria-hidden="true"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="info_bottom">
+        <div class="row">
+          <div class="col-md-6">
+            <p>
+              &copy; <span id="displayYear"></span> All Rights Reserved
+            </p>
+          </div>
+          <div class="col-md-6">
+            <p class="footer_menu">
+              <a href="{{ url_for('index') }}">Home</a>
+              <a href="{{ url_for('about') }}">About</a>
+              <a href="{{ url_for('services') }}">Services</a>
+              <a href="{{ url_for('contact') }}">Contact</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- info section ends -->
+
+  <!-- jQuery, Bootstrap, Owl Carousel and Nice Select JS -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-nice-select/1.1.0/js/jquery.nice-select.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+  <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+  <!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>
+
+
